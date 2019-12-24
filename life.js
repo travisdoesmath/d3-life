@@ -8,18 +8,18 @@ let timeStep = 64,
 
 let cells = [];
 
-function initializeCells() {
+function initializeCells(p) {
     cells = [];
     for (let x = 0; x < pixelsX; x++) {
         let row = [];
         for (let y = 0; y < pixelsY; y++) {
-            row.push(Math.random() > 0.5);
+            row.push(Math.random() < p);
         }
         cells.push(row)
     }    
 }
 
-initializeCells();
+initializeCells(0.02);
 
 function getNumberOfLiveCells(x, y) {
     let n = 0;
@@ -38,8 +38,8 @@ function getNumberOfLiveCells(x, y) {
 
 function isAlive(x, y) {
     try {
-        if (x < 0) x = pixelsX + x - 1;
-        if (y < 0) y = pixelsY + y - 1;
+        if (x < 0) x = pixelsX + x;
+        if (y < 0) y = pixelsY + y;
         x = x % pixelsX;
         y = y % pixelsY;
         value = cells[x][y];    
@@ -143,8 +143,12 @@ function drawScreen() {
 }
 
 d3.select("body").on("keydown", function(d) {
-    if (["ArrowLeft","ArrowRight"].includes(d3.event.key) && !pause) {
-        
+    if (['1','2','3','4','5','6','7','8','9'].includes(d3.event.key) && !pause) {
+        if (d3.event.key == '1') {
+            initializeCells(0.05);
+        } else {
+            initializeCells((+d3.event.key-1)/10);
+        }
     }
 
     if (d3.event.key == "ArrowLeft" && timeStep < maxTimeStep) {
