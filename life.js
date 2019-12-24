@@ -1,8 +1,10 @@
-const pixelWidth = 20,
-    pixelsX = 40,
-    pixelsY = 20,
-    timeStep = 250;
+const pixelWidth = 5,
+    pixelsX = 160,
+    pixelsY = 80;
 
+let timeStep = 64,
+    minTimeStep = 4,
+    maxTimeStep = 512;
 
 let cells = [];
 
@@ -35,12 +37,17 @@ function getNumberOfLiveCells(x, y) {
 }
 
 function isAlive(x, y) {
-    if (cells[x]) {
-        if (cells[y]) {
-            return cells[x][y];
-        }
+    try {
+        if (x < 0) x = pixelsX + x - 1;
+        if (y < 0) y = pixelsY + y - 1;
+        x = x % pixelsX;
+        y = y % pixelsY;
+        value = cells[x][y];    
     }
-    return false;
+    catch(error) {
+        console.log(`x: ${x}, y: ${y}`)
+    }
+    return cells[x][y];
 }
 
 function evolve(cells) {
@@ -112,31 +119,47 @@ function drawScreen() {
     .attr("class","cell")
     .attr("x", d => pixelWidth*d.x + 1)
     .attr("y", d => pixelWidth*d.y + 1)
-    .attr("width", 0)
-    .attr("height", 0)
-    .attr("transform", `translate(${pixelWidth/2},${pixelWidth/2})`)
-    .merge(fg)
-    .transition()
-        .duration(timeStep*.25)
         .attr("width", pixelWidth - 2)
         .attr("height", pixelWidth - 2)
-        .attr("transform", `translate(0,0)`)
+    // .attr("width", 0)
+    // .attr("height", 0)
+    // .attr("transform", `translate(${pixelWidth/2},${pixelWidth/2})`)
+    .merge(fg)
+    // .transition()
+        // .duration(timeStep*.25)
+        // .attr("width", pixelWidth - 2)
+        // .attr("height", pixelWidth - 2)
+        // .attr("transform", `translate(0,0)`)
 
-    liveCells.exit().transition()
-    .duration(timeStep*.25)
-    .attr("width", 0)
-    .attr("height", 0)
-    .attr("transform", `translate(${pixelWidth/2},${pixelWidth/2})`)
+    liveCells.exit()
+    // .transition()
+    // .duration(timeStep*.25)
+    // .attr("width", 0)
+    // .attr("height", 0)
+    // .attr("transform", `translate(${pixelWidth/2},${pixelWidth/2})`)
     .remove()
 
 
 }
 
 d3.select("body").on("keydown", function(d) {
+    if (["ArrowLeft","ArrowRight"].includes(d3.event.key) && !pause) {
+        
+    }
+
+    if (d3.event.key == "ArrowLeft" && timeStep < maxTimeStep) {
+        timeStep = timeStep * 2;
+    }
+
+    if (d3.event.key == "ArrowRight" && timeStep > minTimeStep) {
+        timeStep = timeStep * .5;
+    }
+
+
+
     if (d3.event.key == "Escape" || d3.event.key.toLowerCase() == "p") {
         pause = !pause; 
         if (!pause) { play(); } 
-
     }
 })
 
