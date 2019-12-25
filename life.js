@@ -1,14 +1,20 @@
-const pixelWidth = 5,
-    pixelsX = 160,
-    pixelsY = 80;
+const pixelWidth = 10,
+    pixelsX = 100,
+    pixelsY = 50,
+    chartHeight = 150;
+
+const margin = {top: 10, right: 0, bottom: 10, left: 35}
 
 let timeStep = 64,
     minTimeStep = 4,
     maxTimeStep = 512;
 
-let cells = [];
+let cells = [],
+    cellCounts = [],
+    nIterations = 0;
 
 function initializeCells(p) {
+    nIterations = 0;
     cells = [];
     for (let x = 0; x < pixelsX; x++) {
         let row = [];
@@ -18,8 +24,6 @@ function initializeCells(p) {
         cells.push(row)
     }    
 }
-
-initializeCells(0.02);
 
 function getNumberOfLiveCells(x, y) {
     let n = 0;
@@ -88,14 +92,24 @@ function sparseData(matrix) {
 coordToIndex = d => pixelsX * d.y + d.x;
 indexToCoord = i => { return {x:i % pixelsX, y:Math.floor(i/pixelsX)}; }
 
-svg = d3.select("svg")
+let lifeSvg = d3.select("#lifeSvg")
+let chartSvg = d3.select("#chartSvg").attr("width", pixelWidth * pixelsX).attr("height", chartHeight)
+    .append("g")
+    .attr("width", pixelWidth * pixelsX - margin.left - margin.right)
+    .attr("height", chartHeight - margin.top - margin.bottom)
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+let chart = chartSvg.append("g")
 
-svg
+lifeSvg
     .attr("width", pixelWidth * pixelsX)
     .attr("height", pixelWidth * pixelsY)
 
-bg = svg.append("g")
-fg = svg.append("g")
+chartSvg
+    .attr("width", pixelWidth * pixelsX)
+    .attr("height", chartHeight)
+
+bg = lifeSvg.append("g")
+fg = lifeSvg.append("g")
 
 function initializePixels() {
     d3.range(pixelsX).forEach(x => d3.range(pixelsY).forEach(y => 
@@ -109,11 +123,9 @@ function initializePixels() {
     )
 }
 
-initializePixels();
-
-function drawScreen() {
+function drawScreen(sparseCells) {
     // draw live cells
-    var liveCells = fg.selectAll(".cell").data(sparseData(cells), d => coordToIndex(d))
+    let liveCells = fg.selectAll(".cell").data(sparseCells, d => coordToIndex(d))
     
     liveCells.enter().append("rect")
     .attr("class","cell")
@@ -139,6 +151,31 @@ function drawScreen() {
     // .attr("transform", `translate(${pixelWidth/2},${pixelWidth/2})`)
     .remove()
 
+    var xScale = d3.scaleLinear().domain([0,1000]).range([0,pixelsX * pixelWidth - margin.left - margin.right]);
+    var yScale = d3.scaleLinear().domain([0, pixelsX*pixelsY]).range([chartHeight - margin.top - margin.bottom, 0])
+    var line = d3.line()
+        .x((d, i) => xScale(i))
+        .y(d => yScale(d))
+
+    var yAxis = chartSvg.selectAll(".yAxis").data([0]).enter().append("g").attr("class", "yAxis")
+    yAxis.call(d3.axisLeft(yScale))
+
+    var gridlines = chart.selectAll('.grid').data([0]).enter().append("g").attr("class", "grid")
+    gridlines.call(d3.axisLeft(yScale)
+        .tickSize(-(pixelsX * pixelWidth - margin.left - margin.right))
+        .tickFormat("")
+        )
+
+    var lineChart = chart.selectAll(".line").data([cellCounts])
+
+    lineChart.enter()
+        .append("path")
+        .attr("class", "line")
+
+    lineChart.attr("d", line);
+
+    d3.select("#iterations").text(`${nIterations} iterations`)
+    d3.select("#count").text(`${sparseCells.length} cells alive`)
 
 }
 
@@ -168,13 +205,21 @@ d3.select("body").on("keydown", function(d) {
 })
 
 function play() {
-    drawScreen();
+    nIterations++;
+    let sparseCells = sparseData(cells);
+    cellCounts.push(sparseCells.length);
+    if (cellCounts.length > 1000) {
+        cellCounts = cellCounts.slice(1);
+    }
+    drawScreen(sparseCells);
     cells = evolve(cells);
     if (!pause) { setTimeout(play, timeStep); }
 }
 
 
 let pause = false;
+initializeCells(0.4);
+initializePixels();
 
 play();
 
